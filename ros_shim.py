@@ -63,7 +63,7 @@ class SubscriberWrap():
     #will start a thread for the callback fn
     def __init__(self, topic, msg_type, callback, parentNode):
         self.topic = topic
-        self.rate = 0.5
+        self.rate = 0.05
         self.msg_type = msg_type()
         self.parent = parentNode
         self.callback = callback
