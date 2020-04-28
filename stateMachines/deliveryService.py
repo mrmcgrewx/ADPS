@@ -12,7 +12,6 @@ class DS(object):
     inputQueue = None
     outputQueue = None
 
-
     def __init__(self, inputQueue, outputQueue):
         '''
         Constructor
@@ -21,9 +20,12 @@ class DS(object):
         self.outputQueue = outputQueue
         
         #create thread
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True
-        thread.start() #start the execution
+        self.thread = threading.Thread(target=self.run, args=())
+        self.thread.daemon = True
+        #thread.start() #start the execution
+            
+    def getThread(self):
+        return self.thread
         
     def run(self):
         print("Started Delivery Service thread...")

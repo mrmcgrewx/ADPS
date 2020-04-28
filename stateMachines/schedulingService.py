@@ -3,9 +3,10 @@ Created on Apr 25, 2020
 
 @author: MrMcG
 '''
-import queue 
 import time
 import threading
+from ros_shim import rospy
+from ros_shim import std_msgs
 
 class SS(object):
     '''
@@ -24,14 +25,17 @@ class SS(object):
         '''
         self.state = "IDLE"
         self.outputQueue = outputQueue
+        rospy.Subscriber("/request", std_msgs.List, self.updateRequests)
         
         #create thread
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True
-        thread.start() #start the execution
-        
+        self.thread = threading.Thread(target=self.run, args=())
+        self.thread.daemon = True
+        #thread.start() #start the execution
             
-    def updateState(self,requests):
+    def getThread(self):
+        return self.thread
+            
+    def updateRequests(self, requests):
         self.requests = requests
     
     def getRequest(self):
@@ -41,13 +45,12 @@ class SS(object):
             self.state = "SERVING"
     
     def idle(self):
-        print("SS State: IDLE")
+        #print("SS State: IDLE")
         self.getRequest()
-        time.sleep(2)
+        
     
     def serving(self):
-        print("SS State: SERVING")
-        time.sleep(4)
+        pass
     
     def run(self):
         print("Started Scheduling Service thread...")
@@ -58,4 +61,4 @@ class SS(object):
             elif self.state == "SERVING":
                 self.serving()
                 
-    
+        time.sleep(5)

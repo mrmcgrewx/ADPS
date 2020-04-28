@@ -6,6 +6,9 @@ Created on Apr 25, 2020
 from adps import ADPS
 from ros_shim import rospy
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
 if __name__ == '__main__':
     # Initialize APDS
     nodeName = "Project 3 Node"

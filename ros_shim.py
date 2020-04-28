@@ -54,6 +54,7 @@ class PublisherWrap():
                 "{}".format(self.msg_type): message
             }
         )
+        #print(r.content)
         return r.json()[self.msg_type]
 
 # ROS subscriber to a topic
