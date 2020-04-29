@@ -6,45 +6,43 @@
 # SUBMITTED AND AUTO-GRADED BY THE SYSTEM
 #######################################################################
 
-import subprocess
 import time
 import sys
 import requests
-import json
 import threading
 
 # Wrapper for ROS primitive types
 # mapping to their msg specification
-class Std_msgs():
+class StdMsgs():
     def __init__(self):
         self.name = ""
 
-    def String(self):
+    def string(self):
         return "String"
     
-    def Bool(self):
+    def bool(self):
         return "Bool"
 
-    def Int64(self):
+    def int_64(self):
         return "Int64"
     
-    def Float64(self):
+    def float_64(self):
         return "Float64"
     
-    def List(self):
+    def list(self):
         return "List"
     
-    def Dict(self):
+    def dict(self):
         return "Dictionary"
 
-std_msgs = Std_msgs()
+std_msgs = StdMsgs()
 
 # ROS publisher 
 class PublisherWrap():
-    def __init__(self, topic, msg_type,parentNode):
+    def __init__(self, topic, msg_type,parent_node):
         self.topic = topic
         self.msg_type = msg_type()
-        self.parent = parentNode
+        self.parent = parent_node
 
     #send the data over to the topic
     def publish(self, message):
@@ -61,13 +59,13 @@ class PublisherWrap():
 class SubscriberWrap():
     #initialization 
     #will start a thread for the callback fn
-    def __init__(self, topic, msg_type, callback, parentNode):
+    def __init__(self, topic, msg_type, callback, parent_node):
         self.topic = topic
         self.rate = 0.05
         self.msg_type = msg_type()
-        self.parent = parentNode
+        self.parent = parent_node
         self.callback = callback
-        self.isRegistered = True
+        self.is_registered = True
 
         #create thread
         thread = threading.Thread(target=self.perform, args=())
@@ -76,15 +74,15 @@ class SubscriberWrap():
 
     #perform the action while registered
     def perform(self):
-        while self.isRegistered:
-           # print(self.topic)
+        while self.is_registered:
+            # print(self.topic)
             r = requests.get(self.parent.hostname + self.topic)
             self.callback(r.json()[self.msg_type])
             time.sleep(self.rate)
 
     #unregister the subscription
     def unregister(self):
-        self.isRegistered = False
+        self.is_registered = False
     
 # ROSPY library wrapper
 class Rospy():
@@ -108,20 +106,20 @@ class Rospy():
     # create a new publisher object and register with the node
     # @param topic
     # @param msgType
-    def Publisher(self, topic, msgType):
+    def publisher(self, topic, msg_type):
         if topic in self.topics:
             print("WARNING: Topic %s is already defined"%topic)
 
-        pub = PublisherWrap(topic, msgType, self)
-        self.topics[topic] = msgType()
+        pub = PublisherWrap(topic, msg_type, self)
+        self.topics[topic] = msg_type()
         return pub
         
     #create a new subscription object and register with the node
     # @param topic
-    # @param msgType
+    # @param msg_type
     # @param callback
-    def Subscriber(self, topic, msgType, callback):
-        self.subscriptions[topic] = SubscriberWrap(topic, msgType, callback, self)
+    def subscriber(self, topic, msg_type, callback):
+        self.subscriptions[topic] = SubscriberWrap(topic, msg_type, callback, self)
         return self.subscriptions[topic]
 
     # ROS sleep function for provided duration

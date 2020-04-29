@@ -3,10 +3,9 @@ Created on Apr 25, 2020
 
 @author: MrMcG
 '''
+import logging
 from adps import ADPS
 from ros_shim import rospy
-
-import logging
 
 logging.basicConfig(level=logging.INFO)
 if __name__ == '__main__':
@@ -15,4 +14,3 @@ if __name__ == '__main__':
     rospy.init_node(nodeName)
     adps = ADPS()
     adps.run()
-    
