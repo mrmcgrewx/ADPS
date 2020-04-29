@@ -37,7 +37,7 @@ class AGV:
     t = 0
     command = Command.STOP
     state = Command.STOP
-    orientation = Orientation.COUNTERCLOCKWISE
+    orientation = Orientation.CLOCKWISE
     current_x = 52.5
     current_y = 267.5
     current_a = 0
@@ -93,14 +93,8 @@ class AGV:
     def update_displacement(self,displacement):
         self.displacement = displacement
     
-    def determine_orientation(self,info):
-        y_des = info['locationY']
-        if y_des < self.current_y:
-            self.orientation = Orientation.CLOCKWISE
-    
     def stop(self):
         info = self.input_queue.get()
-        self.determine_orientation(info)
         self.pickup_publisher.publish(info['id'])
         self.pickup_publisher.publish(info['id'])
         self.destination_x = info['locationX']
@@ -116,75 +110,75 @@ class AGV:
             self.y_velocity_pub.publish(y_vel)
         if a_vel is not None:
             self.a_velocity_pub.publish(a_vel)
+            
+    def stop_agv(self):
+        self.publish_position(0, 0, 0)
         
     def straight_state(self):
         x_velocity = 10 * math.cos(self.current_a)
         y_velocity = 10 * math.sin(self.current_a) 
         self.publish_position(x_velocity, y_velocity, None)
         
+        if self.displacement > self.e2:
+            self.update_state(State.LEFT)
+            logging.info("====================== LEFT STATE =========================")
+        elif self.displacement < -(self.e2):
+            self.update_state(State.RIGHT)
+            logging.info("====================== RIGHT STATE =========================")
+        
     def right_state(self):
-        angular_velocity = -(math.pi/16)
-        a = (30 / (1 + math.exp(-(self.t-5))))
+        angular_velocity = (math.pi/16)
+        a = (30/(1 + math.exp(-(self.t-5))))
         x_velocity =  a * math.cos(angular_velocity) * self.t
         y_velocity =  a * math.sin(angular_velocity) * self.t
-        logging.info("x_vel: " + str(x_velocity))
-        logging.info("y_vel: " + str(y_velocity))
         self.publish_position(x_velocity,y_velocity,angular_velocity)
+        
+        if self.displacement > self.e1:
+            self.update_state(State.STRAIGHT)
+            logging.info("====================== STRAIGHT STATE =========================")
+        elif self.displacement > -(self.e2):
+            self.update_state(State.LEFT)
+            logging.info("====================== LEFT STATE =========================")
         
     def left_state(self):
-        angular_velocity = math.pi / 16
-        a = 30 / (1 + math.exp(-(self.t-5)))
+        angular_velocity = -(math.pi/16)
+        a = (30/(1 + math.exp(-(self.t-5))))
         x_velocity = a * math.cos(angular_velocity) * self.t
         y_velocity = a * math.sin(angular_velocity) * self.t
-        logging.info("x_vel: " + str(x_velocity))
-        logging.info("y_vel: " + str(y_velocity))
         self.publish_position(x_velocity,y_velocity,angular_velocity)
         
+        if self.displacement < self.e1:
+            self.update_state(State.RIGHT)
+            logging.info("====================== RIGHT STATE =========================")
+        elif self.displacement < self.e2:
+            self.update_state(State.STRAIGHT)
+            logging.info("====================== STRAIGHT STATE =========================")
+        
     def deliver_package(self):
-        self.publish_position(0, 0, 0)
+        self.stop_agv()
         logging.info("Delivering package")
         self.command = Command.STOP
         self.current_package = {}
         
     def update_state(self,state):
         self.t = 0
-        self.publish_position(0, 0, 0)
+        self.stop_agv()
         self.state = state
     
     def start(self):
         print("AGV starting")
         while self.current_package:
             logging.info("dis: " + str(self.displacement))
+            logging.info("a_vel: " + str(self.current_a))
             if self.state == State.STOP:
-                self.publish_position(0, 0, 0)
-                
+                self.stop_agv()
             elif self.state == State.STRAIGHT:
                 self.straight_state()
-                if self.displacement > self.e2:
-                    self.update_state(State.RIGHT if self.orientation == Orientation.CLOCKWISE else State.LEFT)
-                    logging.info("====================== RIGHT STATE =========================")
-                elif self.displacement < -(self.e2):
-                    self.update_state(State.LEFT if self.orientation == Orientation.CLOCKWISE else State.RIGHT)
-                    logging.info("====================== LEFT STATE =========================")
-                    
             elif self.state == State.RIGHT:
                 self.right_state()
-                if self.displacement < self.e1:
-                    self.update_state(State.STRAIGHT if self.orientation == Orientation.CLOCKWISE else State.LEFT)
-                    logging.info("====================== STRAIGHT STATE =========================")
-                elif self.displacement < -(self.e2):
-                    self.update_state(State.LEFT if self.orientation == Orientation.CLOCKWISE else State.STRAIGHT)
-                    logging.info("====================== LEFT STATE =========================")
-                
             elif self.state == State.LEFT:
                 self.left_state()
-                if self.displacement < self.e1:
-                    self.update_state(State.STRAIGHT if self.orientation == Orientation.CLOCKWISE else State.RIGHT)
-                    logging.info("====================== STRAIGHT STATE =========================")
-                elif self.displacement > self.e2:
-                    self.update_state(State.RIGHT if self.orientation == Orientation.CLOCKWISE else State.STRAIGHT)
-                    logging.info("====================== RIGHT STATE =========================")
-            
+                
             if (self.destination_x - 4 < self.current_x < self.destination_x + 4):
                 self.deliver_package()
             
