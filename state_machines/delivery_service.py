@@ -1,7 +1,7 @@
 '''
 Created on Apr 25, 2020
 
-@author: MrMcG
+@author: Kyle McGrew
 '''
 import threading
 
@@ -24,7 +24,7 @@ class DS:
         
     def run(self):
         print("Started Delivery Service thread...")
-        while True:
+        while 1:
             if not self.input_queue.empty():
                 res = self.input_queue.get()
                 print("DS got message from queue")
