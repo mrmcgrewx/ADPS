@@ -4,6 +4,7 @@ Created on Apr 25, 2020
 @author: MrMcG
 '''
 import queue
+from ros_shim import rospy
 from state_machines.automated_guided_vehicle import AGV
 from state_machines.delivery_service import DS
 from state_machines.scheduling_service import SS
@@ -36,3 +37,10 @@ class ADPS:
         ss_thread.join()
         ds_thread.join()
         agv_thread.join()
+        
+if __name__ == '__main__':
+    # Initialize APDS
+    nodeName = "Project 3 Node"
+    rospy.init_node(nodeName)
+    adps = ADPS()
+    adps.run()

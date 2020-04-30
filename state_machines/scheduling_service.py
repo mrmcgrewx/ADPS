@@ -17,7 +17,6 @@ class SS:
     This class has two states 'IDLE' and 'SERVING'
     When idling this class will read from the input queue 
     '''
-    
     state = ""
     requests = []
     current_request = {}
@@ -54,7 +53,7 @@ class SS:
     
     def run(self):
         print("Started Scheduling Service thread...")
-        while True:
+        while 1:
             if self.state == State.IDLE:
                 self.idle()
                 

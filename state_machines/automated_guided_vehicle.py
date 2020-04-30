@@ -6,9 +6,9 @@ Created on Apr 25, 2020
 import logging
 import math
 import threading
+import time
 from enum import Enum
-from ros_shim import rospy
-from ros_shim import std_msgs
+from ros_shim import rospy, std_msgs
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,13 +33,10 @@ class AGV:
     the track and deliver packages from the pickup station to the
     destination house
     '''
-    
     t = 0
     command = Command.STOP
     state = Command.STOP
     orientation = Orientation.CLOCKWISE
-    current_x = 52.5
-    current_y = 267.5
     current_a = 0
     home_base_x = 52.5
     home_base_y = 267.5
@@ -47,15 +44,14 @@ class AGV:
     destination_y = 0
     starting_angle = math.pi/2
     current_package = {}
-    displacement = 0
-    angular_velocity = 0
-    x_velocity = 0
-    y_velocity= 0
     
     e1 = 7
     e2 = 10
 
     def __init__(self,input_queue):
+        self.displacement = 0
+        self.current_x = 52.5
+        self.current_y = 267.5
         self.input_queue = input_queue
         self.x_velocity_pub = rospy.publisher("/AGVxVelocity",std_msgs.float_64)
         self.y_velocity_pub = rospy.publisher("/AGVyVelocity",std_msgs.float_64)
@@ -120,37 +116,34 @@ class AGV:
         self.publish_position(x_velocity, y_velocity, None)
         
         if self.displacement > self.e2:
-            self.update_state(State.LEFT)
-            logging.info("====================== LEFT STATE =========================")
-        elif self.displacement < -(self.e2):
             self.update_state(State.RIGHT)
             logging.info("====================== RIGHT STATE =========================")
-        
-    def right_state(self):
-        angular_velocity = (math.pi/16)
-        a = (30/(1 + math.exp(-(self.t-5))))
-        x_velocity =  a * math.cos(angular_velocity) * self.t
-        y_velocity =  a * math.sin(angular_velocity) * self.t
-        self.publish_position(x_velocity,y_velocity,angular_velocity)
-        
-        if self.displacement > self.e1:
-            self.update_state(State.STRAIGHT)
-            logging.info("====================== STRAIGHT STATE =========================")
-        elif self.displacement > -(self.e2):
+        elif self.displacement < -(self.e2):
             self.update_state(State.LEFT)
             logging.info("====================== LEFT STATE =========================")
+            
         
-    def left_state(self):
+    def right_state(self):
         angular_velocity = -(math.pi/16)
         a = (30/(1 + math.exp(-(self.t-5))))
-        x_velocity = a * math.cos(angular_velocity) * self.t
-        y_velocity = a * math.sin(angular_velocity) * self.t
+        x_velocity =  a * math.cos(angular_velocity) * self.t*4
+        y_velocity =  a * math.sin(angular_velocity) * self.t*4
+
         self.publish_position(x_velocity,y_velocity,angular_velocity)
         
         if self.displacement < self.e1:
-            self.update_state(State.RIGHT)
-            logging.info("====================== RIGHT STATE =========================")
-        elif self.displacement < self.e2:
+            self.update_state(State.STRAIGHT)
+            logging.info("====================== STRAIGHT STATE =========================")
+        
+    def left_state(self):
+        angular_velocity = (math.pi/16)
+        a = -(30/(1 + math.exp(-(self.t-5))))
+        y_velocity = a * math.cos(angular_velocity) * self.t*4
+        x_velocity = a * math.sin(angular_velocity) * self.t*4
+
+        self.publish_position(x_velocity,y_velocity,angular_velocity)
+        
+        if self.displacement > -(self.e1):
             self.update_state(State.STRAIGHT)
             logging.info("====================== STRAIGHT STATE =========================")
         
@@ -168,8 +161,7 @@ class AGV:
     def start(self):
         print("AGV starting")
         while self.current_package:
-            logging.info("dis: " + str(self.displacement))
-            logging.info("a_vel: " + str(self.current_a))
+            start_time = time.time()
             if self.state == State.STOP:
                 self.stop_agv()
             elif self.state == State.STRAIGHT:
@@ -182,9 +174,12 @@ class AGV:
             if (self.destination_x - 4 < self.current_x < self.destination_x + 4):
                 self.deliver_package()
             
+            run_time = time.time() - start_time
+            logging.info(" ".join(["Exec",str(run_time)]))
+            
     def run(self):
         print("Started AGV thread...")
-        while True:
+        while 1:
             if self.command == Command.STOP:
                 self.stop()
         
